@@ -7,9 +7,10 @@ from src.routers.auth import auth_router
 from src.routers.prizes import prize_router
 from src.routers.roles import role_router
 from src.utility.database import models
-from src.utility.database.database import engine
+from src.utility.database.database import engine, get_db
 from src.utility.responses import CredentialException, PrizeNotFoundException, ProjectNotFoundException, \
     RoleNotFoundException, UserNotFoundException
+from src.utility.schemas.Role import Role
 
 models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
@@ -35,6 +36,27 @@ app.include_router(
     tags=["roles"],
     responses={404: {"detail": "Not found"}},
 )
+
+
+@app.on_event('startup')
+def application_startup():
+    db = next(get_db())  # Get db instance from generator
+
+    # Generate admin role if it does not already exist.
+    admin_role_exists = db.query(models.RoleModel).filter(models.RoleModel.name == 'admin').first()
+    if not admin_role_exists:
+        admin_role = Role(
+            id=0,
+            name='admin',
+            description='Dashboard Administrator. Grants full access to the application.'
+        )
+        new_role = models.RoleModel(**admin_role.dict())
+        db.add(new_role)
+        db.commit()
+
+
+
+
 
 
 @app.exception_handler(CredentialException)

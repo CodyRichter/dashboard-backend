@@ -51,7 +51,7 @@ class RoleModel(Base):
     __tablename__ = "roles"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
+    name = Column(String, index=True, unique=True)
     description = Column(String, index=True)
 
     users = relationship("UserModel", back_populates='role')
