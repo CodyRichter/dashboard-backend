@@ -1,0 +1,27 @@
+version: "3.8"
+
+services:
+  dashboard_backend:
+    container_name: dashboard-backend
+    build:
+      dockerfile: Dockerfile
+    environment:
+      - GUNICORN_CMD_ARGS=--reload
+    volumes:
+      - "./src:/app/src"
+      - "./alembic:/app/alembic"
+    ports:
+      - "5001:5001"
+    depends_on:
+      - postgres
+  postgres:
+    image: postgres:14
+    environment:
+      - POSTGRES_USER=dashboard
+      - POSTGRES_PASSWORD=testpass
+      - POSTGRES_DB=db
+    volumes:
+      - db_container:/var/lib/postgresql/data
+
+volumes:
+  db_container:
