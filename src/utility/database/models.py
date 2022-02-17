@@ -20,6 +20,7 @@ class UserModel(Base):
 
     # Permissions
     disabled = Column(Boolean, default=False)
+    role = relationship("RoleModel", back_populates="users")
 
     # Associations
     project_id = Column(Integer, ForeignKey("projects.id"))
@@ -53,7 +54,7 @@ class RoleModel(Base):
     name = Column(String, index=True)
     description = Column(String, index=True)
 
-    users = relationship("UserModel")
+    users = relationship("UserModel", back_populates='role')
 
 
 class PrizeModel(Base):

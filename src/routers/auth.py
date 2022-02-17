@@ -99,7 +99,8 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 
 def get_current_active_user(current_user=Depends(get_current_user)):
     if current_user.disabled:
-        raise HTTPException(status_code=400, detail="Inactive user")
+        raise CredentialException()
+
     return current_user
 
 
@@ -109,8 +110,7 @@ def get_current_active_user(current_user=Depends(get_current_user)):
 #
 # -------------------------------------------------------------------------------
 
-
-def current_user_admin(token: str = Depends(oauth2_scheme)):
+def current_user_admin(current_user: User =Depends(get_current_user)):
     """
     Permission Checking Function to be used as a Dependency for API endpoints. This is used as a helper.
     This will either return a User object to the calling method if the user meets the authentication requirements,
@@ -119,12 +119,11 @@ def current_user_admin(token: str = Depends(oauth2_scheme)):
     :param token: User authentication token
     :return: User object if user has correct role, else raise CredentialException
     """
-    user = get_current_user(token)
 
-    # if Roles.admin.name not in user.roles:
-    #     raise CredentialException()
+    if not current_user.role or current_user.role.name != 'admin':
+        raise CredentialException()
 
-    return user
+    return current_user
 
 
 @auth_router.post("/login")

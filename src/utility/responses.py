@@ -10,3 +10,11 @@ class PrizeNotFoundException(Exception):
 
 class ProjectNotFoundException(Exception):
     pass
+
+
+class RoleNotFoundException(Exception):
+    pass
+
+
+class UserNotFoundException(Exception):
+    pass

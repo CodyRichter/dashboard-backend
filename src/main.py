@@ -5,9 +5,11 @@ from starlette.responses import JSONResponse
 
 from src.routers.auth import auth_router
 from src.routers.prizes import prize_router
+from src.routers.roles import role_router
 from src.utility.database import models
 from src.utility.database.database import engine
-from src.utility.responses import CredentialException, PrizeNotFoundException, ProjectNotFoundException
+from src.utility.responses import CredentialException, PrizeNotFoundException, ProjectNotFoundException, \
+    RoleNotFoundException, UserNotFoundException
 
 models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
@@ -23,7 +25,14 @@ app.include_router(
 app.include_router(
     prize_router,
     prefix="/prizes",
-    tags=["auth"],
+    tags=["prizes"],
+    responses={404: {"detail": "Not found"}},
+)
+
+app.include_router(
+    role_router,
+    prefix="/roles",
+    tags=["roles"],
     responses={404: {"detail": "Not found"}},
 )
 
@@ -42,7 +51,8 @@ async def credential_exception_handler(request: Request, exc: CredentialExceptio
     return JSONResponse(
         status_code=status.HTTP_401_UNAUTHORIZED,
         content={
-            "detail": "Unable to validate credentials."
+            "detail": "Access Denied. You may not be logged in, or your role "
+                      "does not have sufficient permission to access this page."
         },
         headers={"WWW-Authenticate": "Bearer"},
     )
@@ -64,6 +74,25 @@ async def project_exception_handler(request: Request, exc: ProjectNotFoundExcept
         status_code=status.HTTP_404_NOT_FOUND,
         content={
             "detail": "Unable to find project with given criteria."
+        },
+    )
+
+
+@app.exception_handler(RoleNotFoundException)
+async def project_exception_handler(request: Request, exc: RoleNotFoundException):
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={
+            "detail": "Unable to find role with given criteria."
+        },
+    )
+
+@app.exception_handler(UserNotFoundException)
+async def project_exception_handler(request: Request, exc: UserNotFoundException):
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={
+            "detail": "Unable to find user with given criteria."
         },
     )
 
