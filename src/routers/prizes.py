@@ -3,11 +3,12 @@ from typing import List
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from src.routers.auth import get_current_active_user
+from src.routers.auth import get_current_active_user, current_user_organizer
 from src.utility.database import models
 from src.utility.database.database import get_db
 from src.utility.responses import PrizeNotFoundException, ProjectNotFoundException
 from src.utility.schemas.Prize import Prize, PrizeCreate
+from src.utility.schemas.Project import Project
 from src.utility.schemas.User import User
 
 prize_router = APIRouter()
@@ -39,7 +40,7 @@ async def get_prize(current_user: User = Depends(get_current_active_user),
     return prize
 
 
-@prize_router.post("/new", response_model=Prize)
+@prize_router.post("/new", response_model=Prize, status_code=201)
 async def create_prize(prize: PrizeCreate, current_user: User = Depends(get_current_active_user),
                        db: Session = Depends(get_db)):
     new_prize = models.PrizeModel(**prize.dict())
@@ -90,15 +91,17 @@ async def assign_winner_to_prize(
         prize_id: int,
         project_id: int,
         prize: Prize = Depends(load_prize_from_id),
-        current_user: User = Depends(get_current_active_user),
+        current_user: User = Depends(current_user_organizer),
         db: Session = Depends(get_db)
 ):
-    project = db.query(models.ProjectModel).filter(models.ProjectModel.id == project_id).first()
+    project: Project = db.query(models.ProjectModel).filter(models.ProjectModel.id == project_id).first()
 
     if project is None:
         raise ProjectNotFoundException
 
-    # TODO: Assign Project To Won Prizes List
+    project.prizes_won.append(prize)
+    db.add(project)
+    db.commit()
 
     return prize
 
@@ -108,14 +111,16 @@ async def remove_winner_from_prize(
         prize_id: int,
         project_id: int,
         prize: Prize = Depends(load_prize_from_id),
-        current_user: User = Depends(get_current_active_user),
+        current_user: User = Depends(current_user_organizer),
         db: Session = Depends(get_db)
 ):
-    project = db.query(models.ProjectModel).filter(models.ProjectModel.id == project_id).first()
+    project: Project = db.query(models.ProjectModel).filter(models.ProjectModel.id == project_id).first()
 
     if project is None:
         raise ProjectNotFoundException
 
-    # TODO: Remove Project From Won Prizes List
+    project.prizes_won.remove(prize)
+    db.add(project)
+    db.commit()
 
     return prize

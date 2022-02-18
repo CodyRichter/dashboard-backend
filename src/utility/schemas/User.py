@@ -19,12 +19,15 @@ class User(UserBaseModel):
     first_name: str
     last_name: str
     disabled: bool = False
-
+    
     role: Optional["Role"] = None
+    project: Optional["Project"] = None
 
     class Config:
         orm_mode = True
 
 
 from src.utility.schemas.Role import Role  # noqa
+from src.utility.schemas.Project import Project  # noqa
+
 User.update_forward_refs()

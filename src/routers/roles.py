@@ -42,7 +42,7 @@ async def get_role(current_user: User = Depends(current_user_admin),
     return role
 
 
-@role_router.post("/new", response_model=Role)
+@role_router.post("/new", response_model=Role, status_code=201)
 async def create_role(role: RoleCreate, current_user: User = Depends(current_user_admin),
                       db: Session = Depends(get_db)):
     new_role = models.RoleModel(**role.dict())

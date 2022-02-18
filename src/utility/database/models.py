@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Table
 from sqlalchemy.orm import relationship
 
 from src.utility.database.database import Base
@@ -21,17 +21,22 @@ class UserModel(Base):
     # Permissions
     disabled = Column(Boolean, default=False)
     role = relationship("RoleModel", back_populates="users")
-
-    # Associations
-    project_id = Column(Integer, ForeignKey("projects.id"))
     role_id = Column(Integer, ForeignKey("roles.id"))
 
+    # Project
+    project = relationship("ProjectModel", back_populates="users")
+    project_id = Column(Integer, ForeignKey("projects.id"))
 
-class PrizeProjectWinnerMapModel(Base):
-    __tablename__ = 'prize_project_winner_map'
-    id = Column(Integer, primary_key=True, index=True)
-    projectId = Column(Integer, ForeignKey('projects.id'))
-    prizeId = Column(Integer, ForeignKey('prizes.id'))
+
+prize_project_winner_association = Table('prize_project_winner_association', Base.metadata,
+    Column('project_id', ForeignKey('projects.id')),
+    Column('prize_id', ForeignKey('prizes.id'))
+)
+
+prize_project_attempt_association = Table('prize_project_attempt_association', Base.metadata,
+    Column('project_id', ForeignKey('projects.id')),
+    Column('prize_id', ForeignKey('prizes.id'))
+)
 
 
 class ProjectModel(Base):
@@ -39,12 +44,23 @@ class ProjectModel(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
-    description = Column(String, index=True)
     image_url = Column(String)
     github_link = Column(String)
     video_link = Column(String)
+    description = Column(String, index=True)
+    inspiration = Column(String)
+    functionality = Column(String)
+    architecture = Column(String)
+    technologiesUsed = Column(String)
+    challengesFaced = Column(String)
+    lessonsLearned = Column(String)
+    nextSteps = Column(String)
+    inPersonProject = Column(Boolean, default=True)
+    requiresPowerOutlet = Column(Boolean, default=False)
 
-    prizes_won = relationship('PrizeModel', secondary='prize_project_winner_map', back_populates='winning_projects')
+    users = relationship("UserModel", back_populates='project')
+    prizes_attempted = relationship('PrizeModel', secondary=prize_project_attempt_association, back_populates='attempting_projects')
+    prizes_won = relationship('PrizeModel', secondary=prize_project_winner_association, back_populates='winning_projects')
 
 
 class RoleModel(Base):
@@ -69,4 +85,5 @@ class PrizeModel(Base):
     selectable = Column(Boolean, index=True)  # If projects can select the prize
 
     # Associations
-    winning_projects = relationship('ProjectModel', secondary='prize_project_winner_map', back_populates='prizes_won')
+    attempting_projects = relationship('ProjectModel', secondary=prize_project_attempt_association, back_populates='prizes_attempted')
+    winning_projects = relationship('ProjectModel', secondary=prize_project_winner_association, back_populates='prizes_won')

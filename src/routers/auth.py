@@ -1,7 +1,7 @@
 import datetime
 
 from fastapi.security import OAuth2PasswordRequestForm
-from typing import Optional
+from typing import Optional, List
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 from starlette import status
@@ -110,17 +110,30 @@ def get_current_active_user(current_user=Depends(get_current_user)):
 #
 # -------------------------------------------------------------------------------
 
-def current_user_admin(current_user: User =Depends(get_current_user)):
+def current_user_admin(current_user: User = Depends(get_current_user)):
+    return current_user_role(['admin'], current_user)
+
+
+def current_user_organizer(current_user: User = Depends(get_current_user)):
+    return current_user_role(['admin', 'organizer'], current_user)
+
+
+def current_user_participant(current_user: User = Depends(get_current_user)):
+    return current_user_role(['admin', 'organizer', 'participant'], current_user)
+
+
+def current_user_role(roles: List[str], current_user: User = Depends(get_current_user)):
     """
     Permission Checking Function to be used as a Dependency for API endpoints. This is used as a helper.
     This will either return a User object to the calling method if the user meets the authentication requirements,
     or it will raise a CredentialException and prevent the method that depends on this from continuing.
 
-    :param token: User authentication token
+    :param roles: List of Role names that will have permission granted
+    :param current_user: Current User
     :return: User object if user has correct role, else raise CredentialException
     """
 
-    if not current_user.role or current_user.role.name != 'admin':
+    if not current_user.role or current_user.role.name not in roles:
         raise CredentialException()
 
     return current_user
@@ -134,6 +147,7 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     must log back in again.
 
     :param form_data: HTTP FormData containing login credentials
+    :param db: Database parameter, filled by FastAPI automatically
     :return: {'status': 'success'} with OAuth2 bearer token if login successful, else HTTPException
     """
     user = authenticate_user(form_data.username, form_data.password, db)
@@ -163,7 +177,7 @@ def create_account(user: UserCreate, db: Session = Depends(get_db)):
     and an administrator must manually add permissions to an account before it is able to access most endpoints.
 
     :param user: New user's account information
-    :param db: Database Session
+    :param db: Database parameter, filled by FastAPI automatically
     :return Success if user account added, otherwise failure message and status code
     """
 
@@ -194,12 +208,11 @@ def get_login_status():
 
 
 @auth_router.get("/profile", response_model=User)
-def get_current_user_profile(current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
+def get_current_user_profile(current_user: User = Depends(get_current_active_user)):
     """
     Export the data of the current user to the client.
 
     :param current_user: Currently logged in user to have data exported. This field is auto filled by the HTTP request
-    :param db: Database Session
     :return: User profile details, excluding hashed password.
     """
 

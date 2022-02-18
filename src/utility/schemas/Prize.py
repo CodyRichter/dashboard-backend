@@ -18,7 +18,7 @@ class PrizeCreate(PrizeBase):
 
 class Prize(PrizeBase):
     id: int
-    winning_projects: "List[Project]"
+    # winning_projects: "List[Project]"
 
     class Config:
         orm_mode = True

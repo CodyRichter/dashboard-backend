@@ -5,12 +5,13 @@ from starlette.responses import JSONResponse
 
 from src.routers.auth import auth_router
 from src.routers.prizes import prize_router
+from src.routers.projects import project_router
 from src.routers.roles import role_router
 from src.utility.database import models
 from src.utility.database.database import engine, get_db
 from src.utility.responses import CredentialException, PrizeNotFoundException, ProjectNotFoundException, \
     RoleNotFoundException, UserNotFoundException
-from src.utility.schemas.Role import Role
+from src.utility.schemas.Role import RoleCreate
 
 models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
@@ -30,6 +31,7 @@ app.include_router(
     responses={404: {"detail": "Not found"}},
 )
 
+
 app.include_router(
     role_router,
     prefix="/roles",
@@ -38,25 +40,42 @@ app.include_router(
 )
 
 
+app.include_router(
+    project_router,
+    prefix="/projects",
+    tags=["projects"],
+    responses={404: {"detail": "Not found"}},
+)
+
 @app.on_event('startup')
 def application_startup():
     db = next(get_db())  # Get db instance from generator
 
     # Generate admin role if it does not already exist.
-    admin_role_exists = db.query(models.RoleModel).filter(models.RoleModel.name == 'admin').first()
-    if not admin_role_exists:
-        admin_role = Role(
-            id=0,
-            name='admin',
-            description='Dashboard Administrator. Grants full access to the application.'
-        )
-        new_role = models.RoleModel(**admin_role.dict())
-        db.add(new_role)
-        db.commit()
 
+    roles = [
+        {
+            'name': 'admin',
+            'description': 'Dashboard Administrator. Grants full access to the application, including configuration.'
+        },
+        {
+            'name': 'organizer',
+            'description': 'Event Organizer. Grants access to all event '
+                           'management features and core hackathon functions.'
+        },
+        {
+            'name': 'participant',
+            'description': 'Event Participant. Allows participation in the hackathon, as well as basic API calls'
+        }
+    ]
 
-
-
+    for role in roles:
+        role_exists = db.query(models.RoleModel).filter(models.RoleModel.name == role['name']).first()
+        if not role_exists:
+            new_role = RoleCreate(**role)
+            new_role = models.RoleModel(**new_role.dict())
+            db.add(new_role)
+            db.commit()
 
 
 @app.exception_handler(CredentialException)
