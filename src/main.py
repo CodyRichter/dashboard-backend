@@ -4,13 +4,14 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from src.routers.auth import auth_router
+from src.routers.mentorship_requests import mentorship_request_router
 from src.routers.prizes import prize_router
 from src.routers.projects import project_router
 from src.routers.roles import role_router
 from src.utility.database import models
 from src.utility.database.database import engine, get_db
 from src.utility.responses import CredentialException, PrizeNotFoundException, ProjectNotFoundException, \
-    RoleNotFoundException, UserNotFoundException
+    RoleNotFoundException, UserNotFoundException, MentorshipRequestNotFoundException
 from src.utility.schemas.Role import RoleCreate
 
 models.Base.metadata.create_all(bind=engine)
@@ -46,6 +47,14 @@ app.include_router(
     tags=["projects"],
     responses={404: {"detail": "Not found"}},
 )
+
+app.include_router(
+    mentorship_request_router,
+    prefix="/mentorship_requests",
+    tags=["mentorship_requests"],
+    responses={404: {"detail": "Not found"}},
+)
+
 
 @app.on_event('startup')
 def application_startup():
@@ -128,12 +137,23 @@ async def project_exception_handler(request: Request, exc: RoleNotFoundException
         },
     )
 
+
 @app.exception_handler(UserNotFoundException)
 async def project_exception_handler(request: Request, exc: UserNotFoundException):
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
         content={
             "detail": "Unable to find user with given criteria."
+        },
+    )
+
+
+@app.exception_handler(MentorshipRequestNotFoundException)
+async def project_exception_handler(request: Request, exc: MentorshipRequestNotFoundException):
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={
+            "detail": "Unable to find mentorship request with given criteria."
         },
     )
 

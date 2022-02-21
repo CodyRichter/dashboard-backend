@@ -23,11 +23,16 @@ class User(UserBaseModel):
     role: Optional["Role"] = None
     project: Optional["Project"] = None
 
+    mentorship_requests_participant: List["MentorshipRequest"]
+    mentorship_requests_mentor: List["MentorshipRequest"]
+
     class Config:
         orm_mode = True
 
 
 from src.utility.schemas.Role import Role  # noqa
 from src.utility.schemas.Project import Project  # noqa
+from src.utility.schemas.MentorshipRequest import MentorshipRequest  # noqa
+
 
 User.update_forward_refs()

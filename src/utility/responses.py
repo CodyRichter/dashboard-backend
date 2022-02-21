@@ -18,3 +18,7 @@ class RoleNotFoundException(Exception):
 
 class UserNotFoundException(Exception):
     pass
+
+
+class MentorshipRequestNotFoundException(Exception):
+    pass

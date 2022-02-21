@@ -13,6 +13,7 @@ from src.utility.schemas.Project import ProjectCreate
 from src.utility.schemas.Project import Project
 from src.utility.schemas.User import User
 
+
 project_router = APIRouter()
 
 
@@ -42,8 +43,9 @@ async def get_all_projects(
 async def get_project(current_user: User = Depends(current_user_participant),
                       project: Project = Depends(load_project_from_id)):
     # Ensure that users can only view their own projects
-    if current_user.role.name == 'participant' and (not current_user.project or current_user.project.id != project.id):
-        raise CredentialException
+    if current_user.role.name == 'participant':
+        if not current_user.project or project.id != current_user.project.id:
+            return CredentialException()
 
     return project
 
@@ -80,9 +82,14 @@ def create_project(
 async def delete_project(
         project_id: int,
         project: Project = Depends(load_project_from_id),
-        current_user: User = Depends(current_user_admin),
+        current_user: User = Depends(current_user_participant),
         db: Session = Depends(get_db)
 ):
+
+    if current_user.role.name == 'participant':
+        if not current_user.project or project_id != current_user.project.id:
+            return CredentialException()
+
     db.delete(project)
     db.commit()
 
@@ -100,8 +107,13 @@ def update_project(
         project_id: int,
         project: ProjectCreate,
         db: Session = Depends(get_db),
-        current_user: User = Depends(current_user_admin),
+        current_user: User = Depends(current_user_participant),
 ):
+
+    if current_user.role.name == 'participant':
+        if not current_user.project or project_id != current_user.project.id:
+            return CredentialException()
+
     db.query(models.ProjectModel).filter(models.ProjectModel.id == project_id).update({**project.dict()})
     db.commit()
 
@@ -172,6 +184,10 @@ async def attempt_prizes(
 
     if project is None:
         raise ProjectNotFoundException
+
+    # Only allow participants to modify their own project
+    if current_user.role == 'participant' and current_user.project != project_id:
+        raise CredentialException()
 
     project.prizes_attempted = []
 
